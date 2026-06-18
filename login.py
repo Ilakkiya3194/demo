@@ -240,13 +240,17 @@ conn.commit()
 # =========================
 # LOAD MODEL
 # =========================
-# Ensure 'career_prediction_model.pkl' exists in your root folder
-if os.path.exists("career_prediction_model.pkl"):
-    model = joblib.load("career_prediction_model.pkl")
-else:
-    st.error(
-        "Model file 'career_prediction_model.pkl' missing. Please provide it in the directory."
-    )
+import traceback
+
+try:
+    if os.path.exists("career_prediction_model.pkl"):
+        model = joblib.load("career_prediction_model.pkl")
+    else:
+        st.error("career_prediction_model.pkl file not found")
+except Exception as e:
+    st.error(f"Model Loading Error: {e}")
+    st.code(traceback.format_exc())
+    st.stop()
 
 # =========================
 # SESSION STATE
