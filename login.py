@@ -8,12 +8,13 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
-# =========================
+# =====================================
 # CONFIG
-# =========================
+# =====================================
 st.set_page_config(
     page_title="Career Prediction System", page_icon="🎓", layout="centered"
 )
+
 
 # =====================================
 # FUNCTION TO CONVERT IMAGE TO BASE64
@@ -23,6 +24,7 @@ def get_base64_image(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
     return ""
+
 
 IMAGE_FILENAME = "ila.jpg"
 img_base64 = get_base64_image(IMAGE_FILENAME)
@@ -66,7 +68,6 @@ st.markdown(
 }}
 
 /* ================= 🎯 BROWSE FILES BUTTON BLUE COLOUR FIXED 🎯 ================= */
-/* This directly forces the file uploader widget container */
 div[data-testid="stFileUploader"] {{
     background: rgba(255, 255, 255, 0.95) !important;
     padding: 20px !important;
@@ -74,7 +75,6 @@ div[data-testid="stFileUploader"] {{
     border: 2px dashed #2563eb !important;
 }}
 
-/* Exact targeting for Streamlit's file upload internal secondary button */
 div[data-testid="stFileUploader"] button,
 div[data-testid="stFileUploader"] [data-testid="baseButton-secondary"] {{
     background-color: #2563eb !important;
@@ -89,7 +89,6 @@ div[data-testid="stFileUploader"] [data-testid="baseButton-secondary"] {{
     box-shadow: 0 5px 15px rgba(37,99,235,0.3) !important;
 }}
 
-/* Hover effect for Browse Files button */
 div[data-testid="stFileUploader"] button:hover,
 div[data-testid="stFileUploader"] [data-testid="baseButton-secondary"]:hover {{
     background-color: #1e40af !important;
@@ -99,7 +98,6 @@ div[data-testid="stFileUploader"] [data-testid="baseButton-secondary"]:hover {{
     transform: translateY(-1px);
 }}
 
-/* Fixing internal file details typography */
 div[data-testid="stFileUploader"] section div,
 div[data-testid="stFileUploader"] small,
 div[data-testid="stFileUploaderDropzone"] p {{
@@ -122,8 +120,7 @@ label p,
     font-weight: 700 !important;
 }}
 
-/* ================= 🎯 FIXED: USERNAME & PASSWORD LABELS ONLY IN WHITE 🎯 ================= */
-/* This specifically catches the username/password fields on the login/register view and forces white text */
+/* ================= 🎯 USERNAME & PASSWORD LABELS ONLY IN WHITE 🎯 ================= */
 div[data-testid="stTextInput"] label p {{
     color: #ffffff !important;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.8) !important;
@@ -243,7 +240,13 @@ conn.commit()
 # =========================
 # LOAD MODEL
 # =========================
-model = joblib.load("career_prediction_model.pkl")
+# Ensure 'career_prediction_model.pkl' exists in your root folder
+if os.path.exists("career_prediction_model.pkl"):
+    model = joblib.load("career_prediction_model.pkl")
+else:
+    st.error(
+        "Model file 'career_prediction_model.pkl' missing. Please provide it in the directory."
+    )
 
 # =========================
 # SESSION STATE
@@ -261,6 +264,7 @@ if "encoders" not in st.session_state:
 if "ready" not in st.session_state:
     st.session_state.ready = False
 
+
 # =========================
 # DB FUNCTIONS
 # =========================
@@ -275,6 +279,7 @@ def register_user(username, password):
     except:
         return False
 
+
 def login_user(username, password):
     c.execute(
         "SELECT * FROM users WHERE username=? AND password=?",
@@ -282,10 +287,12 @@ def login_user(username, password):
     )
     return c.fetchone()
 
+
 # =========================
 # SIDEBAR
 # =========================
 option = st.sidebar.selectbox("Choose Option", ["Login", "Register"])
+
 
 # =========================
 # LOGIN PAGE
@@ -295,8 +302,15 @@ def login_page():
 
     if option == "Login":
         st.subheader("Login Form")
-        username = st.text_input("Username", key="login_user", label_visibility="visible")
-        password = st.text_input("Password", type="password", key="login_pass", label_visibility="visible")
+        username = st.text_input(
+            "Username", key="login_user", label_visibility="visible"
+        )
+        password = st.text_input(
+            "Password",
+            type="password",
+            key="login_pass",
+            label_visibility="visible",
+        )
 
         if st.button("Login"):
             user = login_user(username, password)
@@ -311,8 +325,15 @@ def login_page():
 
     elif option == "Register":
         st.subheader("Registration Form")
-        new_user = st.text_input("New Username", key="reg_user", label_visibility="visible")
-        new_pass = st.text_input("New Password", type="password", key="reg_pass", label_visibility="visible")
+        new_user = st.text_input(
+            "New Username", key="reg_user", label_visibility="visible"
+        )
+        new_pass = st.text_input(
+            "New Password",
+            type="password",
+            key="reg_pass",
+            label_visibility="visible",
+        )
 
         if st.button("Register"):
             if register_user(new_user, new_pass):
@@ -320,32 +341,53 @@ def login_page():
             else:
                 st.error("User already exists")
 
+
 # =====================================
 # UPLOAD + AUTO PIPELINE
 # =====================================
 def upload_page():
     st.title("📁 Upload Dataset")
+
     file = st.file_uploader("Upload CSV", type=["csv"])
 
     if file is not None:
         df = pd.read_csv(file)
         st.session_state.df = df
+
         st.success("File Uploaded Successfully")
 
-        st.subheader("📊 Dataset Shape")
+        # ==============================
+        # 📊 ANALYSIS
+        # ==============================
+        st.subheader("📊 Shape")
         st.write(df.shape)
 
-        st.subheader("📌 Preview (Head)")
+        st.subheader("📌 Head")
         st.dataframe(df.head())
 
         st.subheader("❗ Missing Values")
         st.dataframe(df.isnull().sum())
 
-        df = df.dropna().drop_duplicates()
+        st.subheader("♻️ Duplicates")
+        st.write(df.duplicated().sum())
+
+        # ==============================
+        # 🧹 CLEAN DATA
+        # ==============================
+        df = df.dropna()
+        df = df.drop_duplicates()
+
         st.session_state.df = df
 
+        st.subheader("🧹 Clean Data")
+        st.dataframe(df)
+
+        # ============================================================
+        # 🤖 TRAIN MODEL 
+        # ============================================================
         try:
             target = "Future Career"
+
             df_encoded = df.copy()
             encoders = {}
 
@@ -356,6 +398,7 @@ def upload_page():
                     encoders[col] = le
 
             st.session_state.encoders = encoders
+
             X = df_encoded.drop(columns=[target])
             y = df_encoded[target]
 
@@ -365,31 +408,38 @@ def upload_page():
 
             model.fit(X_train, y_train)
             pred = model.predict(X_test)
+
             acc = accuracy_score(y_test, pred)
             model_name = type(model).__name__
 
             st.subheader("🤖 Model Training Results")
+
+            # Green Banner for Model Results
             st.markdown(
                 f"""
            <div style="
                background: #10b981 !important; 
+               background-color: #10b981 !important; 
                padding: 20px; 
                border-radius: 8px; 
-               box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); 
-               margin: 15px 0 25px 0;
+               box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+               margin-top: 15px;
+               margin-bottom: 25px;
                width: 100%;
            ">
-               <p style="color: #ffffff !important; font-size: 17px; font-weight: 700; margin: 8px 0;">
-                   📦 Model Name: <span style="font-weight: 600;">{model_name}</span>
+               <p style="color: #ffffff !important; font-size: 17px; font-weight: 700; margin: 8px 0; font-family: 'Segoe UI', sans-serif;">
+                   📦 Model Name: <span style="color: #ffffff !important; font-weight: 600;">{model_name}</span>
                </p>
-               <p style="color: #ffffff !important; font-size: 17px; font-weight: 700; margin: 8px 0;">
-                   🎯 Model Accuracy: <span style="font-weight: 600;">{acc:.4f}</span>
+               <p style="color: #ffffff !important; font-size: 17px; font-weight: 700; margin: 8px 0; font-family: 'Segoe UI', sans-serif;">
+                   🎯 Model Accuracy: <span style="color: #ffffff !important; font-weight: 600;">{acc:.4f}</span>
                </p>
            </div>
            """,
                 unsafe_allow_html=True,
             )
+
             st.session_state.ready = True
+
         except Exception as e:
             st.error(f"Training Error: {e}")
 
@@ -403,6 +453,7 @@ def upload_page():
         st.session_state.page = "login"
         st.session_state.username = ""
         st.rerun()
+
 
 # =====================================
 # PREDICT PAGE 
@@ -431,11 +482,15 @@ def predict_page():
             student_id = st.number_input("Student ID", min_value=1, value=1)
             age = st.number_input("Age", min_value=15, value=18)
             gender = st.selectbox("Gender", encoders["Gender"].classes_)
-            gpa = st.number_input("GPA", min_value=0.0, max_value=10.0, value=5.0)
+            gpa = st.number_input(
+                "GPA", min_value=0.0, max_value=10.0, value=5.0
+            )
 
         with col2:
             major = st.selectbox("Major", encoders["Major"].classes_)
-            domain = st.selectbox("Interested Domain", encoders["Interested Domain"].classes_)
+            domain = st.selectbox(
+                "Interested Domain", encoders["Interested Domain"].classes_
+            )
             projects = st.selectbox("Projects", encoders["Projects"].classes_)
 
         st.subheader("💻 Programming Skills")
@@ -451,26 +506,38 @@ def predict_page():
         submit = st.form_submit_button("🚀 Predict Career")
 
     if submit:
-        input_data = pd.DataFrame(
-            [
-                {
-                    "Student ID": student_id,
-                    "Gender": encoders["Gender"].transform([gender])[0],
-                    "Age": age,
-                    "GPA": gpa,
-                    "Major": encoders["Major"].transform([major])[0],
-                    "Interested Domain": encoders["Interested Domain"].transform([domain])[0],
-                    "Projects": encoders["Projects"].transform([projects])[0],
-                    "Python": encoders["Python"].transform([python_skill])[0],
-                    "SQL": encoders["SQL"].transform([sql_skill])[0],
-                    "Java": encoders["Java"].transform([java_skill])[0],
-                }
-            ]
-        )
+        try:
+            input_data = pd.DataFrame(
+                [
+                    {
+                        "Student ID": student_id,
+                        "Gender": encoders["Gender"].transform([gender])[0],
+                        "Age": age,
+                        "GPA": gpa,
+                        "Major": encoders["Major"].transform([major])[0],
+                        "Interested Domain": encoders["Interested Domain"].transform(
+                            [domain]
+                        )[
+                            0
+                        ],
+                        "Projects": encoders["Projects"].transform([projects])[
+                            0
+                        ],
+                        "Python": encoders["Python"].transform([python_skill])[
+                            0
+                        ],
+                        "SQL": encoders["SQL"].transform([sql_skill])[0],
+                        "Java": encoders["Java"].transform([java_skill])[0],
+                    }
+                ]
+            )
 
-        pred = model.predict(input_data)[0]
-        career = encoders["Future Career"].inverse_transform([pred])[0]
-        st.success(f"🎯 Predicted Career: {career}")
+            pred = model.predict(input_data)[0]
+            career = encoders["Future Career"].inverse_transform([pred])[0]
+            st.success(f"🎯 Predicted Career: {career}")
+        except Exception as e:
+            st.error(f"Prediction Mapping Error: {e}")
+
 
 # =====================================
 # ROUTING
