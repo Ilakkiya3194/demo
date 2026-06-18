@@ -238,19 +238,15 @@ CREATE TABLE IF NOT EXISTS users (
 conn.commit()
 
 # =========================
-# LOAD MODEL
+# MODEL
 # =========================
-import traceback
+from sklearn.ensemble import GradientBoostingClassifier
 
-try:
-    if os.path.exists("career_prediction_model.pkl"):
-        model = joblib.load("career_prediction_model.pkl")
-    else:
-        st.error("career_prediction_model.pkl file not found")
-except Exception as e:
-    st.error(f"Model Loading Error: {e}")
-    st.code(traceback.format_exc())
-    st.stop()
+model = GradientBoostingClassifier(
+    n_estimators=100,
+    learning_rate=0.1,
+    random_state=42
+)
 
 # =========================
 # SESSION STATE
